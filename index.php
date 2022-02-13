@@ -1,3 +1,3 @@
 <?php
-
-// do nothing
+header('Location: https://grimoire.oddevan.com/');
+die;
