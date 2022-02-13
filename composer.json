@@ -1,0 +1,23 @@
+{
+  "name": "oddevan/grimoire-backend",
+  "description": "Backend for the grimoire app",
+  "type": "project",
+  "license": "AGPL 3",
+  "autoload": {
+    "psr-4": {
+      "oddEvan\\Grimoire\\": "src/"
+    }
+  },
+  "authors": [
+    {
+      "name": "Evan Hildreth",
+      "email": "me@eph.me"
+    }
+  ],
+  "require": {},
+  "require-dev": {
+    "dealerdirect/phpcodesniffer-composer-installer": "^0.7.1",
+    "phpcompatibility/phpcompatibility-wp": "^2.1.1",
+    "wp-coding-standards/wpcs": "~2.3.0"
+  }
+}
