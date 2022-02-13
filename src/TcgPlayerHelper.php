@@ -9,6 +9,8 @@
 
 namespace oddEvan\Grimoire;
 
+use WP_CLI;
+
 /**
  * Handle importing information from external APIs
  *
@@ -120,7 +122,7 @@ class TcgPlayerHelper {
 	private function tcgp_login() : string {
 		if ( ! defined( 'TCGP_PUBLIC_ID' ) || ! defined( 'TCGP_PRIVATE_ID' ) ) {
 			if ( defined( 'WP_CLI' ) && WP_CLI ) {
-				\WP_CLI::error( 'Please make sure TCGP_PUBLIC_ID and TCGP_PRIVATE_ID are set in your wp-config' );
+				WP_CLI::error( 'Please make sure TCGP_PUBLIC_ID and TCGP_PRIVATE_ID are set in your wp-config' );
 			}
 			wp_die( '<b>Error in oddEvan\TrainerDB\Import\TCGPlayerHelper</b>: Please make sure TCGP_PUBLIC_ID and TCGP_PRIVATE_ID are set in your wp-config' );
 		}

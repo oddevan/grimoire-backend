@@ -14,7 +14,9 @@
       "email": "me@eph.me"
     }
   ],
-  "require": {},
+  "require": {
+    "pokemon-tcg/pokemon-tcg-sdk-php": "^2.1"
+  },
   "require-dev": {
     "dealerdirect/phpcodesniffer-composer-installer": "^0.7.1",
     "phpcompatibility/phpcompatibility-wp": "^2.1.1",
