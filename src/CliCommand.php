@@ -1,4 +1,4 @@
-<?php
+<?php //phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped
 /**
  * Class to handle WP_CLI commands
  *
@@ -55,14 +55,238 @@ class CliCommand extends WP_CLI_Command {
 		echo "Pokemon TCG Developers:\nID\tName\tCode\n";
 		foreach ( $pk_sets as $set_obj ) {
 			$pk_set = $set_obj->toArray();
-			echo $pk_set['code'] . "\t" . $pk_set['name'] . "\t" . $pk_set['ptcgoCode'] . "\n";
+			echo $pk_set['id'] . "\t" . $pk_set['name'] . "\t" . $pk_set['ptcgoCode'] . "\n";
 		}
 
 		echo "\n\n";
 
 		echo "TCGPlayer:\nID\tName\tCode\n";
 		foreach ( $tcg_sets as $tcg_set ) {
-			echo $tcg_set->groupId . "\t" . $tcg_set->name . "\t" . $tcg_set->abbreviation . "\n";
+			echo $tcg_set['groupId'] . "\t" . $tcg_set['name'] . "\t" . $tcg_set['abbreviation'] . "\n";
 		}
+	}
+
+	public function import( $args, $assoc_args ) {
+		$overwrite = ! empty( $assoc_args['overwrite'] );
+		$id_prefix = $assoc_args['prefix'] ?? '';
+		$ptcg_set  = $assoc_args['ptcg'] ?? '';
+
+		WP_CLI::log( 'TCGplayer set IDs: ' . implode( ', ', $args ) );
+		WP_CLI::log( "ID Prefix: $id_prefix  PTCG.io Set: $ptcg_set" );
+		WP_CLI::log( 'Duplicate cards will be ' . WP_CLI::colorize( $overwrite ? '%roverwritten%n' : '%gignored%n' ) . '.' );
+
+		foreach ( $args as $set ) {
+			WP_CLI::log( "Importing set $set..." );
+			$this->import_single_set( $set, $overwrite, $id_prefix, $ptcg_set );
+		}
+	}
+
+	private function import_single_set( $tcgp_set, $overwrite, $id_prefix, $ptcg_set ) {
+		$quantity = 100;
+		$offset   = 0;
+		$cards    = $this->tcgp_helper->get_cards_from_set( $tcgp_set, $quantity, $offset );
+
+		while ( ! empty( $cards ) ) {
+			foreach ( $cards as $card ) {
+				$card_info   = $this->parse_tcg_card_info( $card );
+				$card_number = $this->get_card_number( $card_info['card_number'] );
+				$grimoire_id = "pkm-$id_prefix-" . $card_number;
+				$db_id       = $this->get_db_id( $grimoire_id );
+
+				if ( $card_number === '0' ) {
+					continue;
+				}
+
+				if ( $overwrite || ! $db_id ) {
+					$hash_data = wp_json_encode(
+						[
+							'name'    => $this->normalize_title( $card['name'] ),
+							'attacks' => $card_info['attacks'] ?? [],
+							'text'    => $card_info['text'],
+							'type'    => $card_info['type'],
+						],
+						JSON_PRETTY_PRINT
+					);
+
+					$to_load = [
+						'grimoire_id'   => $grimoire_id,
+						'card_title'    => $card['name'],
+						'tcgplayer_sku' => $card_info['sku'],
+						'ptcg_id'       => $ptcg_set . '-' . $card_number,
+						'hash_data'     => $hash_data,
+						'hash'          => md5( $hash_data ),
+					];
+					$result  = $this->import_card( $db_id, $to_load, [ '%s', '%s', '%d', '%s', '%s', '%s' ] );
+					if ( $result === false ) {
+						WP_CLI::error( 'Error importing ' . $to_load['card_title'] );
+					}
+					WP_CLI::success( 'Imported ' . $to_load['card_title'] );
+
+					if ( $card_info['parallel_sku'] ) {
+						$to_load['grimoire_id']   = $grimoire_id . '-r';
+						$to_load['card_title']    = $card['name'] . ' [Reverse Holo]';
+						$to_load['tcgplayer_sku'] = $card_info['parallel_sku'];
+
+						$result = $this->import_card( $db_id, $to_load, [ '%s', '%s', '%d', '%s', '%s', '%s' ] );
+						if ( $result === false ) {
+							WP_CLI::error( 'Error importing ' . $to_load['card_title'] );
+						}
+						WP_CLI::success( 'Imported ' . $to_load['card_title'] );
+					}
+				}
+			}
+
+			$offset += $quantity;
+			$cards   = $this->tcgp_helper->get_cards_from_set( $tcgp_set, $quantity, $offset );
+		}
+	}
+
+	private function import_card( int $db_id, array $args, array $arg_formats ) {
+		global $wpdb;
+		$wpdb->show_errors();
+
+		if ( ! isset( $args['modified'] ) ) {
+			$args['modified'] = gmdate( DATE_RFC3339 );
+			$arg_formats[]    = '%s';
+		}
+
+		if ( $db_id ) {
+			$result = $wpdb->update(
+				$wpdb->prefix . 'pods_card',
+				$args,
+				[ 'id' => $db_id ],
+				$arg_formats,
+				[ '%d' ]
+			);
+			$wpdb->hide_errors();
+			return $result;
+		}
+
+		if ( ! isset( $args['created'] ) ) {
+			$args['created'] = gmdate( DATE_RFC3339 );
+			$arg_formats[]   = '%s';
+		}
+
+		$result = $wpdb->insert( $wpdb->prefix . 'pods_card', $args, $arg_formats );
+		$wpdb->hide_errors();
+		return $result;
+	}
+
+	private function get_card_number( $raw_card_number ) : string {
+		$card_number    = $raw_card_number;
+		$number_matches = [];
+		if ( strpos( $card_number, '/' ) > 0 ) {
+			$card_number = substr( $card_number, 0, strpos( $card_number, '/' ) );
+		}
+		if ( preg_match( '/([a-z]+)0+([1-9]+)/', strtolower( $card_number ), $number_matches ) ) {
+			$card_number = $number_matches[1] . $number_matches[2];
+		}
+		if ( strpos( $card_number, '0' ) === 0 ) {
+			$card_number = ltrim( $card_number, '0' );
+		}
+		return $card_number ?? 0;
+	}
+
+	/**
+	 * Parse the Extended Data from TCGPlayer
+	 *
+	 * @param array $tcgp_card Parsed JSON from TCGPlayer.
+	 * @return array parsed Extended Data
+	 */
+	private function parse_tcg_card_info( $tcgp_card ) : array {
+		$card_info = [];
+
+		foreach ( $tcgp_card['extendedData'] as $edat ) {
+			switch ( $edat['name'] ) {
+				case 'Number':
+					$card_info['card_number'] = $this->get_card_number( $edat['value'] );
+					break;
+				case 'Attack 1':
+				case 'Attack 2':
+				case 'Attack 3':
+				case 'Attack 4':
+					$card_info['attacks'][] = $this->parse_attack( $edat['value'] );
+					break;
+				case 'Card Type':
+					$card_info['type'] = $edat['value'];
+					break;
+				case 'CardText':
+					$card_info['text'] = $edat['value'];
+					break;
+			}
+		}
+
+		$printings = array_filter(
+			$tcgp_card['skus'],
+			function( $value ) {
+				return 1 === $value['languageId'] && 1 === $value['conditionId'];
+			}
+		);
+		foreach ( $printings as $sku ) {
+			if ( 77 === $sku['printingId'] ) {
+				$card_info['parallel_sku'] = $sku['skuId'];
+			} else {
+				$card_info['sku'] = $sku['skuId'];
+			}
+		}
+
+		return $card_info;
+	}
+
+	/**
+	 * Get attack info from the text from TCGPlayer.
+	 *
+	 * @param string $raw_text Text from TCGPlayer's API to be parsed.
+	 */
+	private function parse_attack( $raw_text ) {
+		$stripped_text = wp_strip_all_tags( $raw_text );
+		$matches       = [];
+		$text          = '';
+
+		preg_match( '/\[([0-9A-Z]+)\+?\]\s((\w+\s)+)(\(([0-9x]+)\+?\))?/', $stripped_text, $matches );
+
+		if ( strpos( $stripped_text, "\n" ) > 0 ) {
+			$text = substr( $stripped_text, strpos( $stripped_text, "\n" ) + 1 );
+		}
+
+		return [
+			'cost'        => $matches[1] ?? 0,
+			'name'        => $matches[2] ?? '',
+			'base_damage' => $matches[5] ?? 0,
+			'text'        => $text,
+		];
+	}
+
+	private function get_db_id( string $grimoire_id ) : int {
+		global $wpdb;
+
+		$db_id = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT id FROM {$wpdb->prefix}pods_card WHERE `grimoire_id` = %s",
+				$grimoire_id
+			)
+		);
+
+		return $db_id ?? 0;
+	}
+
+	/**
+	 * Remove extra info from TCGP's card title (descriptors like "Full Art" or extra numbers)
+	 *
+	 * @since 0.1.0
+	 * @author Evan Hildreth <me@eph.me>
+	 *
+	 * @param string $raw_title Raw title from TCGPlayer.
+	 * @return string Title of the card
+	 */
+	private function normalize_title( string $raw_title ) : string {
+		$clean_title = $raw_title;
+		$delimiters  = [ '(', ' -' ];
+		foreach ( $delimiters as $delimiter ) {
+			if ( strpos( $clean_title, $delimiter ) > 0 ) {
+				$clean_title = substr( $clean_title, 0, strpos( $clean_title, $delimiter ) );
+			}
+		}
+		return trim( $clean_title );
 	}
 }

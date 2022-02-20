@@ -97,18 +97,19 @@ class TcgPlayerHelper {
 	 */
 	private function get_from_tcgp( string $endpoint ) {
 		$response = wp_remote_get(
-			'http://api.tcgplayer.com/v1.32.0/' . $endpoint,
+			'http://api.tcgplayer.com/v1.39.0/' . $endpoint,
 			[
 				'headers' => [
 					'Authorization' => 'Bearer ' . $this->access_token,
 					'Accept'        => 'application/json',
 					'Content-Type'  => 'application/json',
+					'User-Agent'    => TCGP_APP_NAME . ' (Server-side at ' . home_url( '/' ) . ')',
 				],
 			]
 		);
 
-		$api_response = json_decode( $response['body'] );
-		return $api_response->results;
+		$api_response = json_decode( $response['body'], true );
+		return $api_response['results'];
 	}
 
 	/**
@@ -130,6 +131,7 @@ class TcgPlayerHelper {
 		$http_options = array(
 			'headers' => array(
 				'Content-Type' => 'application/x-www-form-urlencoded',
+				'User-Agent'   => TCGP_APP_NAME . ' (Server-side at ' . home_url( '/' ) . ')',
 			),
 			'body'    => 'grant_type=client_credentials&client_id=' . TCGP_PUBLIC_ID . '&client_secret=' . TCGP_PRIVATE_ID,
 		);
