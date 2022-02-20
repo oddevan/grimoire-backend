@@ -123,11 +123,11 @@ class CliCommand extends WP_CLI_Command {
 		while ( ! empty( $cards ) ) {
 			foreach ( $cards as $card ) {
 				$card_info   = $this->parse_tcg_card_info( $card );
-				$card_number = $this->get_card_number( $card_info['card_number'] );
+				$card_number = $this->get_card_number( $card_info['card_number'] ?? '0' );
 				$grimoire_id = "pkm-$id_prefix-" . $card_number;
 				$db_id       = $this->get_db_id( $grimoire_id );
 
-				if ( $card_number === '0' ) {
+				if ( ! $card_number || $card_number == 0 ) { //phpcs:ignore we want loose comparison here
 					continue;
 				}
 
@@ -156,7 +156,7 @@ class CliCommand extends WP_CLI_Command {
 					}
 					WP_CLI::success( 'Imported ' . $to_load['card_title'] );
 
-					if ( $card_info['parallel_sku'] ) {
+					if ( ! empty( $card_info['parallel_sku'] ) ) {
 						$to_load['grimoire_id']   = $grimoire_id . '-r';
 						$to_load['card_title']    = $card['name'] . ' [Reverse Holo]';
 						$to_load['tcgplayer_sku'] = $card_info['parallel_sku'];
