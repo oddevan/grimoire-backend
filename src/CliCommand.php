@@ -136,8 +136,8 @@ class CliCommand extends WP_CLI_Command {
 						[
 							'name'    => $this->normalize_title( $card['name'] ),
 							'attacks' => $card_info['attacks'] ?? [],
-							'text'    => $card_info['text'],
-							'type'    => $card_info['type'],
+							'text'    => $card_info['text'] ?? '',
+							'type'    => $card_info['type'] ?? '',
 						],
 						JSON_PRETTY_PRINT
 					);
