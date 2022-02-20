@@ -52,5 +52,3 @@ function set_card_hash( $pieces, $is_new_item ) {
 	return $pieces;
 }
 add_filter( 'pods_api_pre_save_pod_item_card', __NAMESPACE__ . '\set_card_hash', 10, 2 );
-
-// wp_die( '<pre>' . print_r( \pods( 'card', [] ), true ) . '</pre>' );

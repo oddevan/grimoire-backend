@@ -66,7 +66,33 @@ class CliCommand extends WP_CLI_Command {
 		}
 	}
 
-	public function import( $args, $assoc_args ) {
+	/**
+	 * Imports the given sets from TCGplayer
+	 *
+	 * ## OPTIONS
+	 *
+	 * <sets>
+	 * : One or more API IDs of sets to import.
+	 *
+	 *
+	 * [--prefix=<prefix>]
+	 * : Text prefix to use in generating the Grimoire ID. Result will be pkm-<prefix>-<cardNumber>
+	 *
+	 * [--ptcg=<ptcg>]
+	 * : Text prefix to use when inferring an id for PokemonTCG.io
+	 *
+	 * [--overwrite]
+	 * : Include to overwrite any existing data. When a card is brought from the API, its Grimoire ID is generated. If a card with the same ID is already in the database, the data from the API is ignored unless this option is present.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     # Import Fusion Strike
+	 *     $ wp grimoire import 2906 --prefix=fus --ptcg=swsh8 --overwrite
+	 *
+	 * @param array $args Set IDs to import.
+	 * @param array $assoc_args Options for this import.
+	 */
+	public function import( array $args, array $assoc_args ) {
 		$overwrite = ! empty( $assoc_args['overwrite'] );
 		$id_prefix = $assoc_args['prefix'] ?? '';
 		$ptcg_set  = $assoc_args['ptcg'] ?? '';
@@ -81,7 +107,15 @@ class CliCommand extends WP_CLI_Command {
 		}
 	}
 
-	private function import_single_set( $tcgp_set, $overwrite, $id_prefix, $ptcg_set ) {
+	/**
+	 * Import the given set from TCGplayer
+	 *
+	 * @param int    $tcgp_set TCGplayer API ID of the set to import.
+	 * @param bool   $overwrite True if duplicate cards should overwrite the existing DB entry.
+	 * @param string $id_prefix Prefix to use for creating the Grimoire ID.
+	 * @param string $ptcg_set Prefix to use for inferring the PokemonTCG.io ID.
+	 */
+	private function import_single_set( int $tcgp_set, bool $overwrite, string $id_prefix, string $ptcg_set ) {
 		$quantity = 100;
 		$offset   = 0;
 		$cards    = $this->tcgp_helper->get_cards_from_set( $tcgp_set, $quantity, $offset );
@@ -141,6 +175,14 @@ class CliCommand extends WP_CLI_Command {
 		}
 	}
 
+	/**
+	 * Import the given card to the database.
+	 *
+	 * @param integer $db_id If supplied and not falsy, will update the given database ID.
+	 * @param array   $args Array of [column => value] pairs for passing to $wpdb.
+	 * @param array   $arg_formats Array of format strings corresponding to $args.
+	 * @return int|bool Returns false if there was an error, otherwise number of rows affected.
+	 */
 	private function import_card( int $db_id, array $args, array $arg_formats ) {
 		global $wpdb;
 		$wpdb->show_errors();
@@ -172,7 +214,14 @@ class CliCommand extends WP_CLI_Command {
 		return $result;
 	}
 
-	private function get_card_number( $raw_card_number ) : string {
+	/**
+	 * Get the cleaned card number from the TCGplayer string. Removes any leading zeros
+	 * and total numbers. E.g. '001/134' => '1'; 'SWSH042' => 'swsh42'
+	 *
+	 * @param string $raw_card_number Card number from the TCGplayer API.
+	 * @return string Formatted card number.
+	 */
+	private function get_card_number( string $raw_card_number ) : string {
 		$card_number    = $raw_card_number;
 		$number_matches = [];
 		if ( strpos( $card_number, '/' ) > 0 ) {
@@ -237,6 +286,7 @@ class CliCommand extends WP_CLI_Command {
 	 * Get attack info from the text from TCGPlayer.
 	 *
 	 * @param string $raw_text Text from TCGPlayer's API to be parsed.
+	 * @return array Parsed data from the text.
 	 */
 	private function parse_attack( $raw_text ) {
 		$stripped_text = wp_strip_all_tags( $raw_text );
@@ -257,6 +307,12 @@ class CliCommand extends WP_CLI_Command {
 		];
 	}
 
+	/**
+	 * Get the database ID field for the given Grimoire ID; 0 if not found.
+	 *
+	 * @param string $grimoire_id Grimoire ID to search.
+	 * @return integer 0 or database ID.
+	 */
 	private function get_db_id( string $grimoire_id ) : int {
 		global $wpdb;
 
