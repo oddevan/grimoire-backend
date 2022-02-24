@@ -71,7 +71,7 @@ class GrimoireCard {
 	protected function register_index_field() {
 		register_graphql_field(
 			'RootQuery',
-			'cards',
+			'card',
 			[
 				'description' => 'Cards in the Grimoire database',
 				'type'        => [ 'list_of' => self::TYPENAME ],
@@ -88,14 +88,16 @@ class GrimoireCard {
 	public function resolve_index_field() {
 		global $wpdb;
 
-		return $wpdb->get_results(
+		$result = $wpdb->get_results(
 			"SELECT
 				`grimoire_id` as `id`,
-				`card_name` as `name`,
+				`card_title` as `name`,
 				`tcgplayer_sku` as `sku`,
 				`hash`
 			FROM {$wpdb->prefix}pods_card;",
 			ARRAY_A
 		);
+
+		return $result;
 	}
 }

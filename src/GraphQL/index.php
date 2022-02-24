@@ -11,10 +11,12 @@ namespace oddEvan\Grimoire\GraphQL;
  * Loop through and register the GraphQL types
  */
 function register_types() {
-	$types = [];
+	$types = [
+		GrimoireCard::class,
+	];
 
 	foreach ( $types as $type ) {
 		( new $type() )->register();
 	}
 }
-add_action( 'graphql_register_types', __NAMESPACE__ . '/register_types', 10, 0 );
+add_action( 'graphql_register_types', __NAMESPACE__ . '\register_types' );
