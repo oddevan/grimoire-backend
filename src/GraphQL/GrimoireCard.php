@@ -7,6 +7,9 @@
 
 namespace oddEvan\Grimoire\GraphQL;
 
+use WPGraphQL\AppContext;
+use GraphQL\Type\Definition\ResolveInfo;
+
 /**
  * Class to represent a Card in GraphQL
  */
@@ -75,29 +78,45 @@ class GrimoireCard {
 			[
 				'description' => 'Cards in the Grimoire database',
 				'type'        => [ 'list_of' => self::TYPENAME ],
+				'args'        => [
+					'grimoireId' => [
+						'type'        => 'String',
+						'description' => 'ID of a specific card',
+					],
+				],
 				'resolve'     => [ $this, 'resolve_index_field' ],
 			]
 		);
 	}
 
 	/**
-	 * Resolver for the index field
+	 * Resolve the `card` field in GraphQL
 	 *
-	 * @return array
+	 * @see https://www.wpgraphql.com/docs/graphql-resolvers/#resolver-arguments
+	 *
+	 * @param mixed       $root Root object of the GQL query.
+	 * @param array       $args Arguments provided to the field.
+	 * @param AppContext  $context AppContext for the query.
+	 * @param ResolveInfo $info Info about the current state of the resolve tree.
+	 * @return array Results of the database call.
 	 */
-	public function resolve_index_field() {
+	public function resolve_index_field( $root, array $args, AppContext $context, ResolveInfo $info ) {
 		global $wpdb;
 
-		$result = $wpdb->get_results(
-			"SELECT
-				`grimoire_id` as `id`,
-				`card_title` as `name`,
-				`tcgplayer_sku` as `sku`,
-				`hash`
-			FROM {$wpdb->prefix}pods_card;",
-			ARRAY_A
-		);
+		$base_query = "SELECT
+		`grimoire_id` as `id`,
+		`card_title` as `name`,
+		`tcgplayer_sku` as `sku`,
+		`hash`
+	FROM {$wpdb->prefix}pods_card";
 
-		return $result;
+		if ( empty( $args['grimoireId'] ) ) {
+			return $wpdb->get_results( $base_query, ARRAY_A ); //phpcs:ignore
+		}
+
+		return $wpdb->get_results(
+			$wpdb->prepare( $base_query . "\nWHERE `grimoire_id` = %s", $args['grimoireId'] ), //phpcs:ignore
+			ARRAY_A,
+		);
 	}
 }
