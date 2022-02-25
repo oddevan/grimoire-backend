@@ -29,21 +29,25 @@ class GrimoireCard {
 	 * @var array
 	 */
 	protected $fields = [
-		'id'   => [
+		'id'     => [
 			'type'        => 'String',
 			'description' => 'Grimoire ID for this card',
 		],
-		'name' => [
+		'name'   => [
 			'type'        => 'String',
 			'description' => 'Name of the card',
 		],
-		'sku'  => [
+		'sku'    => [
 			'type'        => 'Int',
 			'description' => 'TCGplayer SKU for this particular card',
 		],
-		'hash' => [
+		'hash'   => [
 			'type'        => 'String',
 			'description' => 'MD5 hash of the card\'s distinctive attributes. Used to identify other printings.',
+		],
+		'guruId' => [
+			'type'        => 'String',
+			'description' => 'ID for PokemonTCG.io',
 		],
 	];
 
@@ -107,7 +111,8 @@ class GrimoireCard {
 		`grimoire_id` as `id`,
 		`card_title` as `name`,
 		`tcgplayer_sku` as `sku`,
-		`hash`
+		`hash`,
+		`ptcg_id` as `guruId`
 	FROM {$wpdb->prefix}pods_card";
 
 		if ( empty( $args['grimoireId'] ) ) {
