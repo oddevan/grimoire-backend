@@ -29,25 +29,29 @@ class GrimoireCard {
 	 * @var array
 	 */
 	protected $fields = [
-		'id'     => [
+		'id'        => [
 			'type'        => 'String',
 			'description' => 'Grimoire ID for this card',
 		],
-		'name'   => [
+		'name'      => [
 			'type'        => 'String',
 			'description' => 'Name of the card',
 		],
-		'sku'    => [
+		'sku'       => [
 			'type'        => 'Int',
 			'description' => 'TCGplayer SKU for this particular card',
 		],
-		'hash'   => [
+		'hash'      => [
 			'type'        => 'String',
 			'description' => 'MD5 hash of the card\'s distinctive attributes. Used to identify other printings.',
 		],
-		'guruId' => [
+		'guruId'    => [
 			'type'        => 'String',
 			'description' => 'ID for PokemonTCG.io',
+		],
+		'printings' => [
+			'type'        => [ 'list_of' => self::TYPENAME ],
+			'description' => 'Other printings of this card',
 		],
 	];
 
@@ -108,20 +112,49 @@ class GrimoireCard {
 		global $wpdb;
 
 		$base_query = "SELECT
-		`grimoire_id` as `id`,
-		`card_title` as `name`,
-		`tcgplayer_sku` as `sku`,
-		`hash`,
-		`ptcg_id` as `guruId`
-	FROM {$wpdb->prefix}pods_card";
+			`grimoire_id` as `id`,
+			`card_title` as `name`,
+			`tcgplayer_sku` as `sku`,
+			`hash`,
+			`ptcg_id` as `guruId`
+		FROM {$wpdb->prefix}pods_card";
 
 		if ( empty( $args['grimoireId'] ) ) {
-			return $wpdb->get_results( $base_query, ARRAY_A ); //phpcs:ignore
+			$results = $wpdb->get_results( $base_query, ARRAY_A ); //phpcs:ignore
+			return array_map(
+				function( $card ) {
+					$card['printings'] = [];
+					return $card;
+				},
+				$results
+			);
 		}
 
-		return $wpdb->get_results(
+		$results = $wpdb->get_results(
 			$wpdb->prepare( $base_query . "\nWHERE `grimoire_id` = %s", $args['grimoireId'] ), //phpcs:ignore
 			ARRAY_A,
 		);
+
+		if ( empty( $results ) ) {
+			return [];
+		}
+
+		$results[0]['printings'] = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT
+					`grimoire_id` as `id`,
+					`card_title` as `name`,
+					`tcgplayer_sku` as `sku`,
+					`hash`,
+					`ptcg_id` as `guruId`
+				FROM {$wpdb->prefix}pods_card
+				WHERE `hash` = %s AND `grimoire_id` <> %s",
+				$results[0]['hash'],
+				$results[0]['id']
+			),
+			ARRAY_A
+		);
+
+		return $results;
 	}
 }
