@@ -75,8 +75,8 @@ class CliCommand extends WP_CLI_Command {
 	 * : One or more API IDs of sets to import.
 	 *
 	 *
-	 * [--prefix=<prefix>]
-	 * : Text prefix to use in generating the Grimoire ID. Result will be pkm-<prefix>-<cardNumber>
+	 * [--set=<set>]
+	 * : ID of the set in Grimoire's database. Set must exist and have a prefix.
 	 *
 	 * [--ptcg=<ptcg>]
 	 * : Text prefix to use when inferring an id for PokemonTCG.io
@@ -93,9 +93,24 @@ class CliCommand extends WP_CLI_Command {
 	 * @param array $assoc_args Options for this import.
 	 */
 	public function import( array $args, array $assoc_args ) {
+		global $wpdb;
+
 		$overwrite = ! empty( $assoc_args['overwrite'] );
-		$id_prefix = $assoc_args['prefix'] ?? '';
+		$set_id    = $assoc_args['set'] ?? '';
 		$ptcg_set  = $assoc_args['ptcg'] ?? '';
+
+		$id_prefix = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT `card_key` FROM {$wpdb->prefix}pods_set WHERE id = %d",
+				$set_id
+			)
+		);
+
+		if ( ! $id_prefix ) {
+			WP_CLI::error( 'Please provide a valid Set ID with the --set argument.' );
+		}
+
+		$id_prefix = strtolower( $id_prefix );
 
 		WP_CLI::log( 'TCGplayer set IDs: ' . implode( ', ', $args ) );
 		WP_CLI::log( "ID Prefix: $id_prefix  PTCG.io Set: $ptcg_set" );
@@ -103,7 +118,7 @@ class CliCommand extends WP_CLI_Command {
 
 		foreach ( $args as $set ) {
 			WP_CLI::log( "Importing set $set..." );
-			$this->import_single_set( $set, $overwrite, $id_prefix, $ptcg_set );
+			$this->import_single_set( $set, $overwrite, $id_prefix, $ptcg_set, $set_id );
 		}
 	}
 
@@ -114,8 +129,9 @@ class CliCommand extends WP_CLI_Command {
 	 * @param bool   $overwrite True if duplicate cards should overwrite the existing DB entry.
 	 * @param string $id_prefix Prefix to use for creating the Grimoire ID.
 	 * @param string $ptcg_set Prefix to use for inferring the PokemonTCG.io ID.
+	 * @param int    $set_id ID of the Set in the database.
 	 */
-	private function import_single_set( int $tcgp_set, bool $overwrite, string $id_prefix, string $ptcg_set ) {
+	private function import_single_set( int $tcgp_set, bool $overwrite, string $id_prefix, string $ptcg_set, int $set_id ) {
 		$quantity = 100;
 		$offset   = 0;
 		$cards    = $this->tcgp_helper->get_cards_from_set( $tcgp_set, $quantity, $offset );
@@ -123,11 +139,11 @@ class CliCommand extends WP_CLI_Command {
 		while ( ! empty( $cards ) ) {
 			foreach ( $cards as $card ) {
 				$card_info   = $this->parse_tcg_card_info( $card );
-				$card_number = $this->get_card_number( $card_info['card_number'] ?? '0' );
+				$card_number = $card_info['card_number'] ?? '0';
 				$grimoire_id = "pkm-$id_prefix-" . $card_number;
 				$db_id       = $this->get_db_id( $grimoire_id );
 
-				if ( ! $card_number || $card_number == 0 ) { //phpcs:ignore we want loose comparison here
+				if ( ! $card_number || $card_number === '0' ) {
 					continue;
 				}
 
@@ -149,6 +165,7 @@ class CliCommand extends WP_CLI_Command {
 						'ptcg_id'       => $ptcg_set . '-' . $card_number,
 						'hash_data'     => $hash_data,
 						'hash'          => md5( $hash_data ),
+						'set_id'        => $set_id,
 					];
 					$result  = $this->import_card( $db_id, $to_load, [ '%s', '%s', '%d', '%s', '%s', '%s' ] );
 					if ( $result === false ) {
@@ -222,7 +239,7 @@ class CliCommand extends WP_CLI_Command {
 	 * @return string Formatted card number.
 	 */
 	private function get_card_number( string $raw_card_number ) : string {
-		$card_number    = $raw_card_number;
+		$card_number    = strtolower( $raw_card_number );
 		$number_matches = [];
 		if ( strpos( $card_number, '/' ) > 0 ) {
 			$card_number = substr( $card_number, 0, strpos( $card_number, '/' ) );
@@ -260,7 +277,7 @@ class CliCommand extends WP_CLI_Command {
 					$card_info['type'] = $edat['value'];
 					break;
 				case 'CardText':
-					$card_info['text'] = $edat['value'];
+					$card_info['text'] = $this->normalize_pokemon( $edat['value'] );
 					break;
 			}
 		}
@@ -303,7 +320,7 @@ class CliCommand extends WP_CLI_Command {
 			'cost'        => $matches[1] ?? 0,
 			'name'        => $matches[2] ?? '',
 			'base_damage' => $matches[5] ?? 0,
-			'text'        => $text,
+			'text'        => $this->normalize_pokemon( $text ),
 		];
 	}
 
@@ -344,5 +361,16 @@ class CliCommand extends WP_CLI_Command {
 			}
 		}
 		return trim( $clean_title );
+	}
+
+	/**
+	 * Change any instance of Pokémon to Pokemon for better hash matching
+	 *
+	 * @param string $raw_text Unprocessed text.
+	 * @return string Text with all é changed to e.
+	 */
+	private function normalize_pokemon( string $raw_text ) : string {
+		$normie = str_replace( 'é', 'e', $raw_text );
+		return wp_strip_all_tags( $normie, true );
 	}
 }
