@@ -53,6 +53,18 @@ class GrimoireCard {
 			'type'        => [ 'list_of' => self::TYPENAME ],
 			'description' => 'Other printings of this card',
 		],
+		'setName'   => [
+			'type'        => 'String',
+			'description' => 'Name of set this card belongs to',
+		],
+		'setSlug'   => [
+			'type'        => 'String',
+			'description' => 'Slug for set this card belongs to',
+		],
+		'imgUrl'    => [
+			'type'        => 'String',
+			'description' => 'URL to an image of this card',
+		],
 	];
 
 	/**
@@ -111,13 +123,19 @@ class GrimoireCard {
 	public function resolve_index_field( $root, array $args, AppContext $context, ResolveInfo $info ) {
 		global $wpdb;
 
+		error_log( print_r( $info->getFieldSelection(), true ) );
+
 		$base_query = "SELECT
-			`grimoire_id` as `id`,
-			`card_title` as `name`,
-			`tcgplayer_sku` as `sku`,
-			`hash`,
-			`ptcg_id` as `guruId`
-		FROM {$wpdb->prefix}pods_card";
+			`card`.`grimoire_id` as `id`,
+			`card`.`card_title` as `name`,
+			`card`.`tcgplayer_sku` as `sku`,
+			`card`.`hash`,
+			`card`.`ptcg_id` as `guruId`,
+			`card`.`img_url` as `imgUrl`,
+			`set`.`name` as `setName`,
+			`set`.`permalink` as `setSlug`
+		FROM {$wpdb->prefix}pods_card AS `card`
+			INNER JOIN {$wpdb->prefix}pods_set AS `set` ON `set`.`id` = `card`.`set_id`";
 
 		if ( empty( $args['grimoireId'] ) ) {
 			$results = $wpdb->get_results( $base_query, ARRAY_A ); //phpcs:ignore
@@ -146,8 +164,12 @@ class GrimoireCard {
 					`card_title` as `name`,
 					`tcgplayer_sku` as `sku`,
 					`hash`,
-					`ptcg_id` as `guruId`
-				FROM {$wpdb->prefix}pods_card
+					`ptcg_id` as `guruId`,
+					`card`.`img_url` as `imgUrl`,
+					`set`.`name` as `setName`,
+					`set`.`permalink` as `setSlug`
+				FROM {$wpdb->prefix}pods_card AS `card`
+					INNER JOIN {$wpdb->prefix}pods_set AS `set` ON `set`.`id` = `card`.`set_id`
 				WHERE `hash` = %s AND `grimoire_id` <> %s",
 				$results[0]['hash'],
 				$results[0]['id']

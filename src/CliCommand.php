@@ -166,6 +166,7 @@ class CliCommand extends WP_CLI_Command {
 						'hash_data'     => $hash_data,
 						'hash'          => md5( $hash_data ),
 						'set_id'        => $set_id,
+						'img_url'       => $card['imageUrl'],
 					];
 					$result  = $this->import_card( $db_id, $to_load, [ '%s', '%s', '%d', '%s', '%s', '%s' ] );
 					if ( $result === false ) {
