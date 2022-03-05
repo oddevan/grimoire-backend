@@ -123,8 +123,6 @@ class GrimoireCard {
 	public function resolve_index_field( $root, array $args, AppContext $context, ResolveInfo $info ) {
 		global $wpdb;
 
-		error_log( print_r( $info->getFieldSelection(), true ) );
-
 		$base_query = "SELECT
 			`card`.`grimoire_id` as `id`,
 			`card`.`card_title` as `name`,
