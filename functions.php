@@ -48,9 +48,6 @@ function set_card_hash( $pieces, $is_new_item ) {
 	$hash_data = $pieces['fields']['hash_data']->get_field_value();
 
 	$pieces['fields']['hash']->set_field_value( md5( $hash_data . '' ) );
-	error_log( print_r( $pieces['fields'], true ) );
 	return $pieces;
 }
 add_filter( 'pods_api_pre_save_pod_item_card', __NAMESPACE__ . '\set_card_hash', 10, 2 );
-
-// require_once __DIR__ . '/src/GraphQL/index.php';
