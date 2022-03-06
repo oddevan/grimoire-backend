@@ -51,3 +51,5 @@ function set_card_hash( $pieces, $is_new_item ) {
 	return $pieces;
 }
 add_filter( 'pods_api_pre_save_pod_item_card', __NAMESPACE__ . '\set_card_hash', 10, 2 );
+
+require_once __DIR__ . '/src/RestApi/index.php';
