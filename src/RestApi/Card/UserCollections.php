@@ -89,7 +89,8 @@ class UserCollections extends BaseEndpoint {
 			$wpdb->prepare(
 				"SELECT
 					`collection`.`id`,
-					`collection`.`name`
+					`collection`.`name`,
+					`entry`.`quantity`
 				FROM {$wpdb->prefix}pods_entry AS `entry`
 					INNER JOIN {$wpdb->prefix}pods_collection AS `collection` ON `entry`.`collection_id` = `collection`.`id`
 				WHERE
@@ -100,5 +101,7 @@ class UserCollections extends BaseEndpoint {
 			),
 			ARRAY_A
 		);
+
+		return $results ? $results : [];
 	}
 }
