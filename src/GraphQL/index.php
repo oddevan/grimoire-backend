@@ -13,7 +13,6 @@ namespace oddEvan\Grimoire\GraphQL;
 function register_types() {
 	$types = [
 		GrimoireCard::class,
-		GrimoireCollection::class,
 	];
 
 	foreach ( $types as $type ) {
