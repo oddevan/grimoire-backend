@@ -158,8 +158,6 @@ class GrimoireCollection {
 			return [];
 		}
 
-		error_log( 'GrimoireCollection: ' . print_r( [ $root, $args, $context, $info->fieldDefinition, $info->fieldName, $info->returnType ], true ) );
-
 		return $results;
 	}
 }
