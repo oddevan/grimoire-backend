@@ -13,6 +13,7 @@ namespace oddEvan\Grimoire\RestApi;
 function register_endpoints() {
 	$types = [
 		Card\UserCollections::class,
+		Collection\UpdateCardQuantity::class,
 	];
 
 	foreach ( $types as $type ) {
