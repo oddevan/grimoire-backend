@@ -140,7 +140,7 @@ class CliCommand extends WP_CLI_Command {
 			foreach ( $cards as $card ) {
 				$card_info   = $this->parse_tcg_card_info( $card );
 				$card_number = $card_info['card_number'] ?? '0';
-				$grimoire_id = "pkm-$id_prefix-" . $card_number;
+				$grimoire_id = "pkm-$id_prefix-" . $card_number . $this->id_extra( $card );
 				$db_id       = $this->get_db_id( $grimoire_id );
 
 				if ( ! $card_number || $card_number === '0' ) {
@@ -152,7 +152,6 @@ class CliCommand extends WP_CLI_Command {
 						[
 							'name'    => $this->normalize_title( $card['name'] ),
 							'attacks' => $card_info['attacks'] ?? [],
-							'text'    => $card_info['text'] ?? '',
 							'type'    => $card_info['type'] ?? '',
 						],
 						JSON_PRETTY_PRINT
@@ -277,9 +276,6 @@ class CliCommand extends WP_CLI_Command {
 				case 'Card Type':
 					$card_info['type'] = $edat['value'];
 					break;
-				case 'CardText':
-					$card_info['text'] = $this->normalize_pokemon( $edat['value'] );
-					break;
 			}
 		}
 
@@ -321,7 +317,6 @@ class CliCommand extends WP_CLI_Command {
 			'cost'        => $matches[1] ?? 0,
 			'name'        => $matches[2] ?? '',
 			'base_damage' => $matches[5] ?? 0,
-			'text'        => $this->normalize_pokemon( $text ),
 		];
 	}
 
@@ -365,13 +360,16 @@ class CliCommand extends WP_CLI_Command {
 	}
 
 	/**
-	 * Change any instance of Pokémon to Pokemon for better hash matching
+	 * Add any extra flourishes to the card ID based on any attributes
 	 *
-	 * @param string $raw_text Unprocessed text.
-	 * @return string Text with all é changed to e.
+	 * @param array $card Card object from TCGplayer.
+	 * @return string Anything extra to add to the id
 	 */
-	private function normalize_pokemon( string $raw_text ) : string {
-		$normie = str_replace( 'é', 'e', $raw_text );
-		return wp_strip_all_tags( $normie, true );
+	private function id_extra( $card ) : string {
+		if ( str_ends_with( $card['name'], ' [Staff]' ) ) {
+			return '-s';
+		}
+
+		return '';
 	}
 }
