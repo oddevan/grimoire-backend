@@ -87,18 +87,21 @@ class UserCollections extends BaseEndpoint {
 
 		$results = $wpdb->get_results(
 			$wpdb->prepare(
-				'SELECT
+				"SELECT
 					`collection`.`id`,
 					`collection`.`name`,
 					COALESCE (`entry`.`quantity`, 0) AS `quantity`
 				FROM {$wpdb->prefix}pods_collection AS `collection`
-					LEFT JOIN {$wpdb->prefix}pods_entry AS `entry` ON `entry`.`collection_id` = `collection`.`id`
+					LEFT JOIN (
+						SELECT
+							`quantity`,
+							`collection_id`
+						FROM {$wpdb->prefix}pods_entry
+						WHERE
+							`card_grimoire_id` = %s
+					) AS `entry` ON `entry`.`collection_id` = `collection`.`id`
 				WHERE
-					(
-						`entry`.`card_grimoire_id` = %s OR
-						`entry`.`card_grimoire_id` IS NULL
-					) AND
-					`collection`.`user_id` = %d', //phpcs:ignore
+					`collection`.`user_id` = %d", //phpcs:ignore
 				$grimoire_id,
 				get_current_user_id()
 			),
