@@ -88,6 +88,7 @@ class UpdateCardQuantity extends BaseEndpoint {
 		$grimoire_id   = $request['card_id'];
 		$collection_id = $request['id'];
 		$user_id       = get_current_user_id();
+		$quantity      = $request['quantity'];
 
 		// Check that the card exists.
 		$check = $wpdb->get_var(
@@ -132,11 +133,22 @@ class UpdateCardQuantity extends BaseEndpoint {
 		);
 
 		$db_result = false;
-		if ( $existing_id ) {
+		if ( $quantity <= 0 ) {
+			if ( $existing_id ) {
+				$db_result = $wpdb->delete(
+					$wpdb->prefix . 'pods_entry',
+					[ 'id' => $existing_id ],
+					'%d'
+				);
+			} else {
+				// No line, and quantity is zero, so do nothing.
+				$db_result = true;
+			}
+		} elseif ( $existing_id ) {
 			$db_result = $wpdb->update(
 				$wpdb->prefix . 'pods_entry',
 				[
-					'quantity' => $request['quantity'],
+					'quantity' => $quantity,
 					'modified' => gmdate( DATE_RFC3339 ),
 				],
 				[ 'id' => $existing_id ],
@@ -149,7 +161,7 @@ class UpdateCardQuantity extends BaseEndpoint {
 				[
 					'collection_id'    => $collection_id,
 					'card_grimoire_id' => $grimoire_id,
-					'quantity'         => $request['quantity'],
+					'quantity'         => $quantity,
 					'created'          => gmdate( DATE_RFC3339 ),
 					'modified'         => gmdate( DATE_RFC3339 ),
 				],
@@ -174,7 +186,7 @@ class UpdateCardQuantity extends BaseEndpoint {
 		return [
 			'id'       => $collection_id,
 			'card_id'  => $grimoire_id,
-			'quantity' => $request['quantity'],
+			'quantity' => $quantity,
 		];
 	}
 }
