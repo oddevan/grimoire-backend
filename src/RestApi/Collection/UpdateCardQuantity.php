@@ -135,9 +135,12 @@ class UpdateCardQuantity extends BaseEndpoint {
 		if ( $existing_id ) {
 			$db_result = $wpdb->update(
 				$wpdb->prefix . 'pods_entry',
-				[ 'quantity' => $request['quantity'] ],
+				[
+					'quantity' => $request['quantity'],
+					'modified' => gmdate( DATE_RFC3339 ),
+				],
 				[ 'id' => $existing_id ],
-				'%d',
+				[ '%d', '%s' ],
 				'%d'
 			);
 		} else {
@@ -147,8 +150,10 @@ class UpdateCardQuantity extends BaseEndpoint {
 					'collection_id'    => $collection_id,
 					'card_grimoire_id' => $grimoire_id,
 					'quantity'         => $request['quantity'],
+					'created'          => gmdate( DATE_RFC3339 ),
+					'modified'         => gmdate( DATE_RFC3339 ),
 				],
-				[ '%s', '%d', '%d' ]
+				[ '%s', '%d', '%d', '%s', '%s' ]
 			);
 		}
 
