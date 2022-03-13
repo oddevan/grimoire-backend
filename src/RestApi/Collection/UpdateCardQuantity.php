@@ -153,7 +153,7 @@ class UpdateCardQuantity extends BaseEndpoint {
 					'created'          => gmdate( DATE_RFC3339 ),
 					'modified'         => gmdate( DATE_RFC3339 ),
 				],
-				[ '%s', '%d', '%d', '%s', '%s' ]
+				[ '%d', '%s', '%d', '%s', '%s' ]
 			);
 		}
 
