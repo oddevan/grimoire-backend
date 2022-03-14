@@ -170,15 +170,10 @@ class UpdateCardQuantity extends BaseEndpoint {
 		}
 
 		if ( $db_result === false ) {
-			ob_start();
-			$wpdb->print_error();
-			$db_error = ob_get_clean();
-			ob_end_clean();
-
 			return new WP_Error(
 				[
 					'status'  => 400,
-					'message' => 'Database error: ' . $db_error,
+					'message' => 'Database error: ' . BaseModel::get_wpdb_error(),
 				]
 			);
 		}

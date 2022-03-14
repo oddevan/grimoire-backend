@@ -173,4 +173,20 @@ abstract class BaseModel {
 
 		$this->db_id = $wpdb->insert_id;
 	}
+
+	/**
+	 * Get $wpdb->print_error() as a string
+	 *
+	 * @return string
+	 */
+	public static function get_wpdb_error() : string {
+		global $wpdb;
+
+		ob_start();
+		$wpdb->print_error();
+		$db_error = ob_get_clean();
+		ob_end_clean();
+
+		return $db_error;
+	}
 }
