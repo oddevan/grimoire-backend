@@ -14,6 +14,7 @@ function register_endpoints() {
 	$types = [
 		Card\UserCollections::class,
 		Collection\UpdateCardQuantity::class,
+		Collection\UserCollections::class,
 	];
 
 	foreach ( $types as $type ) {
