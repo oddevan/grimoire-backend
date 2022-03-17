@@ -83,7 +83,7 @@ class UserCollections extends BaseEndpoint {
 					"SELECT
 						`entries`.`quantity` as `quantity`,
 						`entries`.`card_grimoire_id` as `id`,
-						`cards`.`name` as `name`,
+						`cards`.`card_title` as `name`,
 						`sets`.`name` as `set_name`,
 						`sets`.`permalink` as `set_permalink`
 					FROM {$wpdb->prefix}pods_entry AS `entries`
@@ -116,10 +116,11 @@ class UserCollections extends BaseEndpoint {
 							'setSlug' => $card['set_slug'],
 						],
 					];
-				}
+				},
+				$cards
 			);
 		}
 
-		return $results ? $results : [];
+		return $collections ? $collections : [];
 	}
 }
