@@ -77,7 +77,8 @@ class UserCollections extends BaseEndpoint {
 			);
 		}
 
-		foreach ( $collections as $collection ) {
+		$num_collections = count( $collections );
+		for ( $k = 0; $k < $num_collections; $k++ ) {
 			$cards = $wpdb->get_results(
 				$wpdb->prepare(
 					"SELECT
@@ -91,7 +92,7 @@ class UserCollections extends BaseEndpoint {
 						LEFT JOIN {$wpdb->prefix}pods_set AS `sets` ON `sets`.`id` = `cards`.`set_id`
 					WHERE
 						`entries`.`collection_id` = %d", //phpcs:ignore
-					$collection['id']
+					$collections[ $k ]['id']
 				),
 				ARRAY_A
 			);
@@ -105,7 +106,7 @@ class UserCollections extends BaseEndpoint {
 				);
 			}
 
-			$collection['cards'] = array_map(
+			$collections[ $k ]['cards'] = array_map(
 				function( $card ) {
 					return [
 						'quantity' => $card['quantity'],
