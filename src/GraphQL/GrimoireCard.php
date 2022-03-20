@@ -103,6 +103,10 @@ class GrimoireCard {
 						'type'        => 'String',
 						'description' => 'ID of a specific card',
 					],
+					'setSlug'    => [
+						'type'        => 'String',
+						'description' => 'Slug of a set to retrieve',
+					],
 				],
 				'resolve'     => [ $this, 'resolve_index_field' ],
 			]
@@ -123,7 +127,7 @@ class GrimoireCard {
 	public function resolve_index_field( $root, array $args, AppContext $context, ResolveInfo $info ) {
 		global $wpdb;
 
-		$base_query = "SELECT
+		$query = "SELECT
 			`card`.`grimoire_id` as `id`,
 			`card`.`card_title` as `name`,
 			`card`.`tcgplayer_sku` as `sku`,
@@ -133,10 +137,24 @@ class GrimoireCard {
 			`set`.`name` as `setName`,
 			`set`.`permalink` as `setSlug`
 		FROM {$wpdb->prefix}pods_card AS `card`
-			INNER JOIN {$wpdb->prefix}pods_set AS `set` ON `set`.`id` = `card`.`set_id`";
+			INNER JOIN {$wpdb->prefix}pods_set AS `set` ON `set`.`id` = `card`.`set_id`
+		WHERE 1=1";
+
+		if ( $args['grimoireId'] ) {
+			$query .= $wpdb->prepare( ' AND `grimoire_id` = %s', $args['grimoireId'] );
+		}
+
+		if ( $args['setSlug'] ) {
+			$query .= $wpdb->prepare( ' AND `set`.`permalink` = %s', $args['setSlug'] );
+		}
+
+		$results = $wpdb->get_results( $query, ARRAY_A ); //phpcs:ignore
+
+		if ( empty( $results ) ) {
+			return [];
+		}
 
 		if ( empty( $args['grimoireId'] ) ) {
-			$results = $wpdb->get_results( $base_query, ARRAY_A ); //phpcs:ignore
 			return array_map(
 				function( $card ) {
 					$card['printings'] = [];
@@ -144,15 +162,6 @@ class GrimoireCard {
 				},
 				$results
 			);
-		}
-
-		$results = $wpdb->get_results(
-			$wpdb->prepare( $base_query . "\nWHERE `grimoire_id` = %s", $args['grimoireId'] ), //phpcs:ignore
-			ARRAY_A,
-		);
-
-		if ( empty( $results ) ) {
-			return [];
 		}
 
 		$results[0]['printings'] = $wpdb->get_results(
