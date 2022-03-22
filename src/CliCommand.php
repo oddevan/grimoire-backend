@@ -152,9 +152,9 @@ class CliCommand extends WP_CLI_Command {
 				if ( $overwrite || ! $db_id ) {
 					$hash_data = wp_json_encode(
 						[
-							'name' => $card['cleanName'] ?? $card['name'],
+							'name' => $this->normalize_title( $card['name'] ),
 							'type' => $card_info['type'] ?? '',
-							'data' => $card_info['attacks'] ?? $card['text'] ?? '',
+							'data' => $card_info['attacks'] ?? $card_info['text'] ?? '',
 						],
 						JSON_PRETTY_PRINT
 					);
@@ -268,6 +268,26 @@ class CliCommand extends WP_CLI_Command {
 			$card_number = substr( $card_number, 0, strpos( $card_number, '/' ) );
 		}
 		return $card_number ?? '0';
+	}
+
+	/**
+	 * Remove extra info from TCGP's card title (descriptors like "Full Art" or extra numbers)
+	 *
+	 * @since 0.1.0
+	 * @author Evan Hildreth <me@eph.me>
+	 *
+	 * @param string $raw_title Raw title from TCGPlayer.
+	 * @return string Title of the card
+	 */
+	private function normalize_title( string $raw_title ) : string {
+		$clean_title = $raw_title;
+		$delimiters  = [ '(', ' -' ];
+		foreach ( $delimiters as $delimiter ) {
+			if ( strpos( $clean_title, $delimiter ) > 0 ) {
+				$clean_title = substr( $clean_title, 0, strpos( $clean_title, $delimiter ) );
+			}
+		}
+		return trim( $clean_title );
 	}
 
 	/**
