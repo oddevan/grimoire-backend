@@ -148,7 +148,7 @@ class GrimoireCard {
 			$query .= $wpdb->prepare( ' AND `set`.`permalink` = %s', $args['setSlug'] );
 		}
 
-		$results = $wpdb->get_results( $query, ARRAY_A ); //phpcs:ignore
+		$results = $wpdb->get_results( $query . ' ORDER BY `card`.`sequence`;', ARRAY_A ); //phpcs:ignore
 
 		if ( empty( $results ) ) {
 			return [];

@@ -150,9 +150,9 @@ class CliCommand extends WP_CLI_Command {
 				if ( $overwrite || ! $db_id ) {
 					$hash_data = wp_json_encode(
 						[
-							'name'    => $this->normalize_title( $card['name'] ),
-							'attacks' => $card_info['attacks'] ?? [],
-							'type'    => $card_info['type'] ?? '',
+							'name' => $card['cleanName'] ?? $card['name'],
+							'type' => $card_info['type'] ?? '',
+							'data' => $card_info['attacks'] ?? $card['text'] ?? '',
 						],
 						JSON_PRETTY_PRINT
 					);
@@ -161,13 +161,13 @@ class CliCommand extends WP_CLI_Command {
 						'grimoire_id'   => $grimoire_id,
 						'card_title'    => $card['name'],
 						'tcgplayer_sku' => $card_info['sku'],
-						'ptcg_id'       => $ptcg_set . '-' . $card_number,
 						'hash_data'     => $hash_data,
 						'hash'          => md5( $hash_data ),
 						'set_id'        => $set_id,
 						'img_url'       => $card['imageUrl'],
+						'sequence'      => $this->get_sequence( $card_info['card_number'] ?? '0' ),
 					];
-					$result  = $this->import_card( $db_id, $to_load, [ '%s', '%s', '%d', '%s', '%s', '%s' ] );
+					$result  = $this->import_card( $db_id, $to_load, [ '%s', '%s', '%d', '%s', '%s', '%d', '%s', '%s' ] );
 					if ( $result === false ) {
 						WP_CLI::error( 'Error importing ' . $to_load['card_title'] );
 					}
@@ -177,8 +177,9 @@ class CliCommand extends WP_CLI_Command {
 						$to_load['grimoire_id']   = $grimoire_id . '-r';
 						$to_load['card_title']    = $card['name'] . ' [Reverse Holo]';
 						$to_load['tcgplayer_sku'] = $card_info['parallel_sku'];
+						$to_load['sequence']      = $to_load['sequence'] . 'r';
 
-						$result = $this->import_card( $db_id, $to_load, [ '%s', '%s', '%d', '%s', '%s', '%s' ] );
+						$result = $this->import_card( $db_id, $to_load, [ '%s', '%s', '%d', '%s', '%s', '%d', '%s', '%s' ] );
 						if ( $result === false ) {
 							WP_CLI::error( 'Error importing ' . $to_load['card_title'] );
 						}
@@ -239,18 +240,30 @@ class CliCommand extends WP_CLI_Command {
 	 * @return string Formatted card number.
 	 */
 	private function get_card_number( string $raw_card_number ) : string {
-		$card_number    = strtolower( $raw_card_number );
+		$card_number    = $this->get_sequence( $raw_card_number );
 		$number_matches = [];
-		if ( strpos( $card_number, '/' ) > 0 ) {
-			$card_number = substr( $card_number, 0, strpos( $card_number, '/' ) );
-		}
 		if ( preg_match( '/([a-z]+)0+([1-9]+)/', strtolower( $card_number ), $number_matches ) ) {
 			$card_number = $number_matches[1] . $number_matches[2];
 		}
 		if ( strpos( $card_number, '0' ) === 0 ) {
 			$card_number = ltrim( $card_number, '0' );
 		}
-		return $card_number ?? 0;
+		return $card_number ?? '0';
+	}
+
+	/**
+	 * Get a minimally processed card number for ordering cards in a set. Removes total numbers
+	 * and converts to lowercase.
+	 *
+	 * @param string $raw_card_number Card number from the TCGplayer API.
+	 * @return string Formatted card number.
+	 */
+	private function get_sequence( string $raw_card_number ) : string {
+		$card_number = strtolower( $raw_card_number );
+		if ( strpos( $card_number, '/' ) > 0 ) {
+			$card_number = substr( $card_number, 0, strpos( $card_number, '/' ) );
+		}
+		return $card_number ?? '0';
 	}
 
 	/**
@@ -275,6 +288,9 @@ class CliCommand extends WP_CLI_Command {
 					break;
 				case 'Card Type':
 					$card_info['type'] = $edat['value'];
+					break;
+				case 'CardText':
+					$card_info['text'] = $edat['value'];
 					break;
 			}
 		}
@@ -337,26 +353,6 @@ class CliCommand extends WP_CLI_Command {
 		);
 
 		return $db_id ?? 0;
-	}
-
-	/**
-	 * Remove extra info from TCGP's card title (descriptors like "Full Art" or extra numbers)
-	 *
-	 * @since 0.1.0
-	 * @author Evan Hildreth <me@eph.me>
-	 *
-	 * @param string $raw_title Raw title from TCGPlayer.
-	 * @return string Title of the card
-	 */
-	private function normalize_title( string $raw_title ) : string {
-		$clean_title = $raw_title;
-		$delimiters  = [ '(', ' -' ];
-		foreach ( $delimiters as $delimiter ) {
-			if ( strpos( $clean_title, $delimiter ) > 0 ) {
-				$clean_title = substr( $clean_title, 0, strpos( $clean_title, $delimiter ) );
-			}
-		}
-		return trim( $clean_title );
 	}
 
 	/**
