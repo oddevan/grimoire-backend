@@ -159,6 +159,8 @@ class CliCommand extends WP_CLI_Command {
 						JSON_PRETTY_PRINT
 					);
 
+					$card_sequence = $this->get_sequence( $card_info['card_number'] ?? '0' );
+
 					$to_load = [
 						'grimoire_id'   => $grimoire_id,
 						'card_title'    => $card['name'],
@@ -167,7 +169,7 @@ class CliCommand extends WP_CLI_Command {
 						'hash'          => md5( $hash_data ),
 						'set_id'        => $set_id,
 						'img_url'       => $card['imageUrl'],
-						'sequence'      => $this->get_sequence( $card_info['card_number'] ?? '0' ),
+						'sequence'      => is_numeric( $card_sequence ) ? str_pad( $card_sequence, 3, '0', STR_PAD_LEFT ) : $card_sequence,
 					];
 					$result  = $this->import_card( $db_id, $to_load, [ '%s', '%s', '%d', '%s', '%s', '%d', '%s', '%s' ] );
 					if ( $result === false ) {
