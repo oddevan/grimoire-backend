@@ -8,10 +8,12 @@
 namespace oddEvan\Grimoire;
 
 use Pokemon\Pokemon;
+use \InvalidArgumentException;
 use \WP_CLI;
 use \WP_Query;
 use \WP_CLI_Command;
 use oddEvan\Grimoire\TcgPlayerHelper;
+use oddEvan\Grimoire\Model\HashPokemon;
 
 /**
  * Class to handle the WP-CLI commands. May refactor logic out to different class eventually.
@@ -186,6 +188,8 @@ class CliCommand extends WP_CLI_Command {
 						WP_CLI::success( 'Imported ' . $to_load['card_title'] );
 					}
 				}
+
+				$this->check_hash_data( md5( $hash_data ), $ptcg_set . '-' . $card_number, $overwrite );
 			}
 
 			$offset += $quantity;
@@ -367,5 +371,63 @@ class CliCommand extends WP_CLI_Command {
 		}
 
 		return '';
+	}
+
+	/**
+	 * See if the hash data exists and fetch it if not (or if overwriting)
+	 *
+	 * @param string  $hash Hash we are matching on.
+	 * @param string  $ptcg_id ID of the card on pokemontcg.io.
+	 * @param boolean $overwrite True if existing entries should be ignored.
+	 */
+	private function check_hash_data( string $hash, string $ptcg_id, bool $overwrite ) : void {
+		$db_hash = new HashPokemon( $hash );
+
+		if ( ! $db_hash->needs_save() && ! $overwrite ) {
+			// Entry exists and we're not overwriting: skip this one.
+			return;
+		}
+
+		$api_card = false;
+		try {
+			$api_card = Pokemon::Card()->find( $ptcg_id );
+		} catch ( InvalidArgumentException $e ) {
+			// No card with this ID; log it and skip this one.
+			WP_CLI::log( "  > Invalid API ID $ptcg_id" );
+			return;
+		}
+
+		$legalities = $api_card->getLegalities();
+
+		$name = $api_card->getName();
+		$slug = sanitize_title( $name );
+		if ( $db_hash->check_permalink( $slug ) ) {
+			// A hash entry already exists with this title, add the set.
+			$name .= ' - ' . $api_card->getSet()->getName();
+			$slug  = sanitize_title( $name );
+
+			if ( $db_hash->check_permalink( $slug ) ) {
+				// More than one of this card in the set, add the card number.
+				$name = $api_card->getName() . ' (' . $api_card->getNumber() . ') - ' . $api_card->getSet()->getName();
+				$slug = sanitize_title( $name );
+
+				while ( $db_hash->check_permalink( $slug ) ) {
+					// Still exists, let's add a random string until it doesn't.
+					$slug .= '-' . substr( uniqid( '', true ), -5 );
+				}
+			}
+		}
+
+		$db_hash->api_id       = $ptcg_id;
+		$db_hash->name         = $name;
+		$db_hash->permalink    = $slug;
+		$db_hash->card_name    = $api_card->getName();
+		$db_hash->supertype    = $api_card->getSupertype();
+		$db_hash->subtype      = wp_json_encode( $api_card->getSubtypes() );
+		$db_hash->is_standard  = isset( $legalities ) && $legalities->getStandard() ? true : false;
+		$db_hash->is_expanded  = isset( $legalities ) && $legalities->getStandard() ? true : false;
+		$db_hash->is_unlimited = isset( $legalities ) && $legalities->getStandard() ? true : false;
+
+		$db_hash->save();
 	}
 }
