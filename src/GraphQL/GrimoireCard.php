@@ -45,10 +45,6 @@ class GrimoireCard {
 			'type'        => 'String',
 			'description' => 'MD5 hash of the card\'s distinctive attributes. Used to identify other printings.',
 		],
-		'guruId'    => [
-			'type'        => 'String',
-			'description' => 'ID for PokemonTCG.io',
-		],
 		'printings' => [
 			'type'        => [ 'list_of' => self::TYPENAME ],
 			'description' => 'Other printings of this card',
@@ -132,7 +128,6 @@ class GrimoireCard {
 			`card`.`card_title` as `name`,
 			`card`.`tcgplayer_sku` as `sku`,
 			`card`.`hash`,
-			`card`.`ptcg_id` as `guruId`,
 			`card`.`img_url` as `imgUrl`,
 			`set`.`name` as `setName`,
 			`set`.`permalink` as `setSlug`
@@ -171,7 +166,6 @@ class GrimoireCard {
 					`card_title` as `name`,
 					`tcgplayer_sku` as `sku`,
 					`hash`,
-					`ptcg_id` as `guruId`,
 					`card`.`img_url` as `imgUrl`,
 					`set`.`name` as `setName`,
 					`set`.`permalink` as `setSlug`
