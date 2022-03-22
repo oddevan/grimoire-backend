@@ -31,10 +31,8 @@ class Card extends BaseModel {
 	 */
 	public function __construct( string $grimoire_id = '' ) {
 		$this->data = [
-			'grimoire_id'   => '',
+			'grimoire_id'   => $grimoire_id,
 			'card_title'    => '',
-			'created'       => '',
-			'modified'      => '',
 			'tcgplayer_sku' => '',
 			'ptcg_id'       => '',
 			'hash'          => '',
@@ -44,8 +42,6 @@ class Card extends BaseModel {
 		];
 
 		$this->data_formats = [
-			'%s',
-			'%s',
 			'%s',
 			'%s',
 			'%d',

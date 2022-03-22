@@ -48,6 +48,13 @@ abstract class BaseModel {
 	protected bool $is_dirty = true;
 
 	/**
+	 * True if the underlying table has `created` and `modified` date fields.
+	 *
+	 * @var boolean
+	 */
+	protected bool $has_audit_fields = true;
+
+	/**
 	 * Returns true if this instance is out-of-sync with the database
 	 * because either it has not been linked to a database ID or it has
 	 * been modified since loading from the database.
@@ -72,7 +79,7 @@ abstract class BaseModel {
 	 * @return mixed|null Value of $data[$name] or null
 	 */
 	public function __get( string $name ) : mixed {
-		if ( ! isset( $data[ $name ] ) ) {
+		if ( ! isset( $this->data[ $name ] ) ) {
 			$trace = debug_backtrace();
 			trigger_error(
 				'Undefined property ' . $name .
@@ -83,7 +90,7 @@ abstract class BaseModel {
 			return null;
 		}
 
-		return $data[ $name ];
+		return $this->data[ $name ];
 	}
 
 	/**
@@ -94,7 +101,7 @@ abstract class BaseModel {
 	 * @param mixed  $value Value to set.
 	 */
 	public function __set( string $name, mixed $value ) : void {
-		if ( ! isset( $data[ $name ] ) ) {
+		if ( ! isset( $this->data[ $name ] ) ) {
 			$trace = debug_backtrace();
 			trigger_error(
 				'Undefined property ' . $name .
@@ -105,8 +112,8 @@ abstract class BaseModel {
 			return;
 		}
 
-		$data[ $name ] = $value;
-		$is_dirty      = true;
+		$this->data[ $name ] = $value;
+		$this->is_dirty      = true;
 	}
 
 	/**
@@ -118,7 +125,7 @@ abstract class BaseModel {
 
 		$db_data = $wpdb->get_row(
 			$wpdb->prepare(
-				"SELECT * FROM $full_tablename WHERE `id` = %d", //phpcs:ignore
+				"SELECT * FROM $tablename WHERE `id` = %d", //phpcs:ignore
 				$this->db_id
 			),
 			ARRAY_A
@@ -136,9 +143,9 @@ abstract class BaseModel {
 	 */
 	public function save() : void {
 		if ( $this->db_id ) {
-			update();
+			$this->update();
 		} else {
-			create();
+			$this->create();
 		}
 	}
 
@@ -147,7 +154,15 @@ abstract class BaseModel {
 	 */
 	protected function update() : void {
 		global $wpdb;
-		$tablename = $this->full_table_name();
+
+		if ( $this->has_audit_fields ) {
+			array_merge( $this->data, [ 'modified' => gmdate( DATE_RFC3339 ) ] );
+
+			$num_args = count( $this->data );
+			for ( $k = count( $this->data_formats ); $k < $num_args; $k++ ) {
+				$this->data_formats[] = '%s';
+			}
+		}
 
 		$wpdb->update(
 			$this->full_table_name(),
@@ -163,7 +178,21 @@ abstract class BaseModel {
 	 */
 	protected function create() : void {
 		global $wpdb;
-		$tablename = $this->full_table_name();
+
+		if ( $this->has_audit_fields ) {
+			array_merge(
+				$this->data,
+				[
+					'created'  => gmdate( DATE_RFC3339 ),
+					'modified' => gmdate( DATE_RFC3339 ),
+				]
+			);
+
+			$num_args = count( $this->data );
+			for ( $k = count( $this->data_formats ); $k < $num_args; $k++ ) {
+				$this->data_formats[] = '%s';
+			}
+		}
 
 		$wpdb->insert(
 			$this->full_table_name(),
