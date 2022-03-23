@@ -183,6 +183,8 @@ class CliCommand extends WP_CLI_Command {
 						$to_load['tcgplayer_sku'] = $card_info['parallel_sku'];
 						$to_load['sequence']      = $to_load['sequence'] . 'r';
 
+						$db_id = $this->get_db_id( $grimoire_id . '-r' );
+
 						$result = $this->import_card( $db_id, $to_load, [ '%s', '%s', '%d', '%s', '%s', '%d', '%s', '%s' ] );
 						if ( $result === false ) {
 							WP_CLI::error( 'Error importing ' . $to_load['card_title'] );
@@ -316,7 +318,7 @@ class CliCommand extends WP_CLI_Command {
 					$card_info['type'] = $edat['value'];
 					break;
 				case 'CardText':
-					$card_info['text'] = $edat['value'];
+					$card_info['text'] = iconv( 'UTF-8', 'ASCII//TRANSLIT', $edat['value'] );
 					break;
 			}
 		}
