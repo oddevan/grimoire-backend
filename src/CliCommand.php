@@ -150,13 +150,16 @@ class CliCommand extends WP_CLI_Command {
 				}
 
 				if ( $overwrite || ! $db_id ) {
+					// Do not use JSON_PRETTY_PRINT here; there is a difference in the whitespace
+					// characters between this and the SQL inserted by $wpdb. This will mean that
+					// cards edited after import will have different hashes than expected. Unless
+					// this can be resolved, just make the JSON ugly.
 					$hash_data = wp_json_encode(
 						[
 							'name' => $this->normalize_title( $card['name'] ),
 							'type' => $card_info['type'] ?? '',
 							'data' => $card_info['attacks'] ?? $card_info['text'] ?? '',
-						],
-						JSON_PRETTY_PRINT
+						]
 					);
 
 					$card_sequence = $this->get_sequence( $card_info['card_number'] ?? '0' );
