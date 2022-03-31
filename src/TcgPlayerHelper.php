@@ -86,6 +86,16 @@ class TcgPlayerHelper {
 	}
 
 	/**
+	 * Get pricing information for the given array of skus
+	 *
+	 * @param array $skus Array of TCGplayer SKUs to check.
+	 * @return array Result from TCGP
+	 */
+	public function get_prices_for_skus( array $skus ) : array {
+		return $this->get_from_tcgp( 'pricing/sku/' . implode( ',', $skus ) );
+	}
+
+	/**
 	 * Make a request to the TCGPlayer API using the given endpoint. Request will
 	 * be made to `'http://api.tcgplayer.com/v1.32.0/' . $endpoint`.
 	 *
@@ -107,6 +117,17 @@ class TcgPlayerHelper {
 				],
 			]
 		);
+
+		if (
+			empty( $response ) ||
+			is_wp_error( $response ) ||
+			( 200 !== $response['response']['code'] && 201 !== $response['response']['code'] ) ) {
+			// This function will display an error and stop the script.
+			WP_CLI::error(
+				'Error connecting to TCGplayer. Response: ' .
+				( is_wp_error( $response ) ? $response->get_error_message() : ( $response['body'] ?? '(none)' ) )
+			);
+		}
 
 		$api_response = json_decode( $response['body'], true );
 		return $api_response['results'];

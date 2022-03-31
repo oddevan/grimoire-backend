@@ -69,6 +69,49 @@ class CliCommand extends WP_CLI_Command {
 	}
 
 	/**
+	 * Iterate through all cards and get updated market pricing from TCGplayer
+	 */
+	public function update_prices() {
+		global $wpdb;
+
+		$now        = gmdate( DATE_RFC3339 );
+		$query_text = $wpdb->prepare(
+			"SELECT `tcgplayer_sku`
+			FROM `{$wpdb->prefix}pods_card`
+			WHERE `modified` < %s
+			LIMIT 50",
+			$now
+		);
+
+		$query_results = $wpdb->get_col( $query_text ); //phpcs:ignore
+
+		// While there are cards left to traverse...
+		while ( ! empty( $query_results ) ) {
+			WP_CLI::log( 'Fetching price batch...' );
+			$prices = $this->tcgp_helper->get_prices_for_skus( $query_results );
+
+			foreach ( $prices as $sku_info ) {
+				$wpdb->query(
+					$wpdb->prepare(
+						"UPDATE `{$wpdb->prefix}pods_card`
+						SET
+							`price` = %f,
+							`modified` = %s
+						WHERE `tcgplayer_sku` = %d",
+						$sku_info['marketPrice'],
+						$now,
+						$sku_info['skuId']
+					)
+				);
+				WP_CLI::success( $sku_info['skuId'] . ': $' . $sku_info['marketPrice'] );
+			}
+
+			// Get more posts if they exist.
+			$query_results = $wpdb->get_col( $query_text ); //phpcs:ignore
+		}
+	}
+
+	/**
 	 * Imports the given sets from TCGplayer
 	 *
 	 * ## OPTIONS
