@@ -31,7 +31,7 @@ class UpdateCardQuantity extends BaseEndpoint {
 	 */
 	protected function get_args() : array {
 		return [
-			// 'methods'             => WP_REST_Server::EDITABLE,
+			'methods'             => WP_REST_Server::EDITABLE,
 			'permission_callback' => [ $this, 'check_permissions' ],
 			'args'                => [
 				'id'       => [
