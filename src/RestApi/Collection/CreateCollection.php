@@ -57,7 +57,7 @@ class CreateCollection extends BaseEndpoint {
 	 * @return boolean
 	 */
 	public function validate_string( $param ) : bool {
-		return preg_match( '/^[^\n]+$/', $param ) === 1;
+		return is_string( $param ) && ! str_contains( $param, "\n" );
 	}
 
 	/**
