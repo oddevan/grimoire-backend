@@ -16,7 +16,7 @@ use \WP_Error;
 /**
  * Endpoint to show collections
  */
-class UpdateCardQuantity extends BaseEndpoint {
+class CreateCollection extends BaseEndpoint {
 	/**
 	 * Route for this endpoint
 	 *
