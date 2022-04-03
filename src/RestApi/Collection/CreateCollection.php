@@ -35,7 +35,7 @@ class CreateCollection extends BaseEndpoint {
 			'permission_callback' => [ $this, 'check_permissions' ],
 			'args'                => [
 				'name' => [
-					'validate_callback' => [ $this, 'validate_string' ],
+					'sanitize_callback' => [ $this, 'sanitize_string' ],
 				],
 			],
 		];
@@ -56,8 +56,8 @@ class CreateCollection extends BaseEndpoint {
 	 * @param string $param name parameter from the request.
 	 * @return boolean
 	 */
-	public function validate_string( $param ) : bool {
-		return is_string( $param ) && ! str_contains( $param, "\n" );
+	public function sanitize_string( $param ) : string {
+		return is_string( $param ) ? trim( $param ) : '';
 	}
 
 	/**
