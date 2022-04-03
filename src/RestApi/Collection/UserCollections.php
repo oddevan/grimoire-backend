@@ -70,10 +70,9 @@ class UserCollections extends BaseEndpoint {
 
 		if ( $collections === false ) {
 			return new WP_Error(
-				[
-					'status'  => 400,
-					'message' => 'Database error: ' . BaseModel::get_wpdb_error(),
-				]
+				'database_error',
+				'Database error: ' . BaseModel::get_wpdb_error(),
+				[ 'status' => 400 ]
 			);
 		}
 
@@ -100,10 +99,9 @@ class UserCollections extends BaseEndpoint {
 
 			if ( $cards === false ) {
 				return new WP_Error(
-					[
-						'status'  => 400,
-						'message' => 'Database error: ' . BaseModel::get_wpdb_error(),
-					]
+					'database_error',
+					'Database error: ' . BaseModel::get_wpdb_error(),
+					[ 'status' => 400 ]
 				);
 			}
 

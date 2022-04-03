@@ -78,10 +78,9 @@ class UserCollections extends BaseEndpoint {
 
 		if ( ! $check ) {
 			return new WP_Error(
-				[
-					'status'  => 404,
-					'message' => 'The indicated card was not found.',
-				]
+				'not_found',
+				'The indicated card was not found.',
+				[ 'status' => 404 ]
 			);
 		}
 

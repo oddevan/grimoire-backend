@@ -99,10 +99,9 @@ class UpdateCardQuantity extends BaseEndpoint {
 		);
 		if ( ! $check ) {
 			return new WP_Error(
-				[
-					'status'  => 404,
-					'message' => 'The indicated card was not found.',
-				]
+				'not_found',
+				'The indicated card was not found.',
+				[ 'status' => 404 ]
 			);
 		}
 
@@ -116,10 +115,9 @@ class UpdateCardQuantity extends BaseEndpoint {
 		);
 		if ( ! $check ) {
 			return new WP_Error(
-				[
-					'status'  => 404,
-					'message' => 'The indicated collection was not found.',
-				]
+				'not_found',
+				'The indicated collection was not found.',
+				[ 'status' => 404 ]
 			);
 		}
 
@@ -171,10 +169,9 @@ class UpdateCardQuantity extends BaseEndpoint {
 
 		if ( $db_result === false ) {
 			return new WP_Error(
-				[
-					'status'  => 400,
-					'message' => 'Database error: ' . BaseModel::get_wpdb_error(),
-				]
+				'database_error',
+				'Database error: ' . BaseModel::get_wpdb_error(),
+				[ 'status' => 400 ]
 			);
 		}
 

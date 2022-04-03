@@ -83,10 +83,9 @@ class CreateCollection extends BaseEndpoint {
 		);
 		if ( $check ) {
 			return new WP_Error(
-				[
-					'status'  => 409,
-					'message' => 'A collection with this (or very similar) name already exists.',
-				]
+				'not_unique',
+				'A collection with this (or very similar) name already exists.',
+				[ 'status' => 409 ]
 			);
 		}
 
@@ -105,10 +104,9 @@ class CreateCollection extends BaseEndpoint {
 
 		if ( $db_result === false ) {
 			return new WP_Error(
-				[
-					'status'  => 400,
-					'message' => 'Database error: ' . BaseModel::get_wpdb_error(),
-				]
+				'database_error',
+				'Database error: ' . BaseModel::get_wpdb_error(),
+				[ 'status' => 400 ]
 			);
 		}
 
