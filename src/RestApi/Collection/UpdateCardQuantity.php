@@ -85,10 +85,12 @@ class UpdateCardQuantity extends BaseEndpoint {
 	public function run( WP_REST_Request $request ) {
 		global $wpdb;
 
-		$grimoire_id   = $request['card_id'];
+		$params = $request->get_json_params();
+
+		$grimoire_id   = $params['card_id'];
 		$collection_id = $request['id'];
 		$user_id       = get_current_user_id();
-		$quantity      = $request['quantity'];
+		$quantity      = $params['quantity'];
 
 		// Check that the card exists.
 		$check = $wpdb->get_var(

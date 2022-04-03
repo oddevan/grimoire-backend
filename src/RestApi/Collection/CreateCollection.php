@@ -69,8 +69,10 @@ class CreateCollection extends BaseEndpoint {
 	public function run( WP_REST_Request $request ) {
 		global $wpdb;
 
+		$params = $request->get_json_params();
+
 		$user_id      = get_current_user_id();
-		$display_name = $request['name'];
+		$display_name = $params['name'];
 		$slug         = sanitize_title( $display_name );
 
 		// Check that the collection does not already exist.
