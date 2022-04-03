@@ -76,8 +76,9 @@ class UpdateCardQuantity extends BaseEndpoint {
 		// Check that the collection does not already exist.
 		$check = $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT `id` FROM {$wpdb->prefix}pods_collection WHERE `permalink` = %s", //phpcs:ignore
-				$slug
+				"SELECT `id` FROM {$wpdb->prefix}pods_collection WHERE `permalink` = %s AND `user_id` = %d", //phpcs:ignore
+				$slug,
+				$user_id
 			)
 		);
 		if ( $check ) {
