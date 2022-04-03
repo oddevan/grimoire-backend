@@ -85,7 +85,7 @@ class UserCollections extends BaseEndpoint {
 						`entries`.`quantity` as `quantity`,
 						`entries`.`card_grimoire_id` as `id`,
 						`cards`.`card_title` as `name`,
-						`cards`.`price` as `price`
+						`cards`.`price` as `price`,
 						`sets`.`name` as `set_name`,
 						`sets`.`permalink` as `set_permalink`
 					FROM {$wpdb->prefix}pods_entry AS `entries`
