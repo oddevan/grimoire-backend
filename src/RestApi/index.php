@@ -12,6 +12,7 @@ namespace oddEvan\Grimoire\RestApi;
  */
 function register_endpoints() {
 	$types = [
+		Card\Price::class,
 		Card\UserCollections::class,
 		Collection\CreateCollection::class,
 		Collection\UpdateCardQuantity::class,
