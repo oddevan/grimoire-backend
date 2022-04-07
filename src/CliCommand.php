@@ -84,10 +84,10 @@ class CliCommand extends WP_CLI_Command {
 	 *     # Update prices and save the new prices to a CSV
 	 *     $ wp grimoire update_prices --dump
 	 *
-	 * @param array $args Set IDs to import.
+	 * @param array $args Ignored.
 	 * @param array $assoc_args Options for this import.
 	 */
-	public function update_prices() {
+	public function update_prices( array $args, array $assoc_args ) {
 		global $wpdb;
 
 		$dump = ! empty( $assoc_args['dump'] );
