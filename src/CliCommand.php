@@ -105,7 +105,9 @@ class CliCommand extends WP_CLI_Command {
 
 		$dump_file = null;
 		if ($dump) {
-			$file_name = trailingslashit(wp_upload_dir()['path']) . 'prices-' . date('Y-m-d') . '.csv';
+			$upload_dir = wp_upload_dir();
+			$file_name = trailingslashit($upload_dir['path']) . 'prices-' . date('Y-m-d') . '.csv';
+			WP_CLI::log( 'Writing data to ' . $file_name );
 			$dump_file = fopen($file_name, 'w');
 			fwrite( $dump_file, 'TCGplayer SKU, Market Price' . PHP_EOL );
 		}
@@ -139,7 +141,9 @@ class CliCommand extends WP_CLI_Command {
 			$query_results = $wpdb->get_col( $query_text ); //phpcs:ignore
 		}
 
-		fclose( $dump_file );
+		if ( $dump_file ) {
+			fclose( $dump_file );
+		}
 	}
 
 	/**
