@@ -70,9 +70,27 @@ class CliCommand extends WP_CLI_Command {
 
 	/**
 	 * Iterate through all cards and get updated market pricing from TCGplayer
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--dump]
+	 * : Dump results to a CSV file in the current uploads directory with today's date
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     # Update prices
+	 *     $ wp grimoire update_prices
+	 * 
+	 *     # Update prices and save the new prices to a CSV
+	 *     $ wp grimoire update_prices --dump
+	 *
+	 * @param array $args Set IDs to import.
+	 * @param array $assoc_args Options for this import.
 	 */
 	public function update_prices() {
 		global $wpdb;
+
+		$dump = ! empty( $assoc_args['dump'] );
 
 		$now        = gmdate( DATE_RFC3339 );
 		$query_text = $wpdb->prepare(
@@ -84,6 +102,13 @@ class CliCommand extends WP_CLI_Command {
 		);
 
 		$query_results = $wpdb->get_col( $query_text ); //phpcs:ignore
+
+		$dump_file = null;
+		if ($dump) {
+			$file_name = trailingslashit(wp_upload_dir()['path']) . 'prices-' . date('Y-m-d') . '.csv';
+			$dump_file = fopen($file_name, 'w');
+			fwrite( $dump_file, 'TCGplayer SKU, Market Price' . PHP_EOL );
+		}
 
 		// While there are cards left to traverse...
 		while ( ! empty( $query_results ) ) {
@@ -104,11 +129,17 @@ class CliCommand extends WP_CLI_Command {
 					)
 				);
 				WP_CLI::success( $sku_info['skuId'] . ': $' . $sku_info['marketPrice'] );
+				
+				if ( $dump_file ) {
+					fwrite( $dump_file, $sku_info['skuId'] . ', ' . $sku_info['marketPrice'] . PHP_EOL );
+				}
 			}
 
 			// Get more posts if they exist.
 			$query_results = $wpdb->get_col( $query_text ); //phpcs:ignore
 		}
+
+		fclose( $dump_file );
 	}
 
 	/**
