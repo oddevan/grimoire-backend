@@ -15,6 +15,7 @@ function register_endpoints() {
 		Card\Price::class,
 		Card\UserCollections::class,
 		Collection\CreateCollection::class,
+		Collection\DownloadExport::class,
 		Collection\UpdateCardQuantity::class,
 		Collection\UserCollections::class,
 	];
