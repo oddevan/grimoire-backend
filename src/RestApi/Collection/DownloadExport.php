@@ -95,9 +95,9 @@ class DownloadExport extends BaseEndpoint {
 					`card`.`card_title`,
 					`set`.`name`,
 					`entry`.`quantity`
-				FROM {$wpdb->prefix}_pods_entry as `entry`
-					LEFT JOIN {$wpdb->prefix}_pods_card as `card` on `entry`.`card_grimoire_id` = `card`.`grimoire_id`
-					LEFT JOIN {$wpdb->prefix}_pods_set as `set` on `card`.`set_id` = `set`.`id`
+				FROM {$wpdb->prefix}pods_entry as `entry`
+					LEFT JOIN {$wpdb->prefix}pods_card as `card` on `entry`.`card_grimoire_id` = `card`.`grimoire_id`
+					LEFT JOIN {$wpdb->prefix}pods_set as `set` on `card`.`set_id` = `set`.`id`
 				WHERE `entry`.`collection_id` = %d",
 				$collection_id
 			),
