@@ -74,7 +74,7 @@ class DownloadExport extends BaseEndpoint {
 		// Check that the collection exists and is owned by the current user. If so, get the name.
 		$name = $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT `id` FROM {$wpdb->prefix}pods_collection WHERE `id` = %d && `user_id` = %d", //phpcs:ignore
+				"SELECT `name` FROM {$wpdb->prefix}pods_collection WHERE `id` = %d && `user_id` = %d", //phpcs:ignore
 				$collection_id,
 				$user_id
 			)
